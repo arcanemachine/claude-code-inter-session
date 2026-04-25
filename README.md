@@ -31,7 +31,14 @@ git clone https://github.com/yilunzhang/claude-code-inter-session
 /plugin install inter-session@inter-session
 ```
 
-Then run `/inter-session install-deps` once to install runtime deps.
+Then run `/inter-session:inter-session install-deps` once to install
+runtime deps.
+
+> **Slash command syntax**: Claude Code namespaces plugin-skill commands
+> as `/<plugin>:<skill>`. Type `/inter-session:inter-session …` (the
+> bare `/inter-session` form only works for standalone-skill installs).
+> The rest of this README uses `/inter-session …` as shorthand to keep
+> the prose readable.
 
 By default the monitor starts **lazily** — it spins up the first time
 you invoke any `/inter-session` command in a session. To switch to
@@ -99,6 +106,9 @@ require explicit affirmative content; ambiguous requests prompt a
 `question:` clarifier first.
 
 ## Slash commands
+
+(Type these as `/inter-session:inter-session …` per the namespacing note
+under Install above; `/inter-session …` is shorthand here.)
 
 | Command                                         | What it does                                                   |
 | :---------------------------------------------- | :------------------------------------------------------------- |
