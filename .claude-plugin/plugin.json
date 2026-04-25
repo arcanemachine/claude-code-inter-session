@@ -1,0 +1,21 @@
+{
+  "name": "inter-session",
+  "version": "0.1.0",
+  "description": "Inter-agent messaging for Claude Code sessions on the same machine.",
+  "skills": ["./"],
+  "monitors": "./monitors/monitors.json",
+  "userConfig": {
+    "port": {
+      "type": "number",
+      "title": "Server port",
+      "description": "Localhost WebSocket port for the inter-session bus.",
+      "default": 9473
+    },
+    "idle_shutdown_minutes": {
+      "type": "number",
+      "title": "Idle shutdown (min)",
+      "description": "Server exits after this many minutes with zero connected clients. 0 = never.",
+      "default": 10
+    }
+  }
+}

@@ -1,0 +1,147 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+An agent-to-agent messaging bus for Claude Code: multiple CC sessions on
+the same Unix machine connect to a localhost WebSocket server and
+exchange messages that drive actions in the receiving session. Ships in
+two flavors from the same repo:
+
+- **Skill**: `git clone … ~/.claude/skills/inter-session`, manual `/inter-session`.
+- **Plugin**: `claude --plugin-dir <path>` (or marketplace install); the
+  plugin's monitor auto-starts the client.
+
+Single user, single machine. Unix-only (macOS / Linux / WSL2).
+
+## Common commands
+
+```bash
+pip install -r requirements-dev.txt          # one-time
+pytest -q                                    # full suite (~23 s, 175 tests)
+pytest tests/test_server.py -v               # one file
+pytest -k "election" -v                      # by substring
+pytest -m "not slow"                         # skip subprocess-spawning tests
+```
+
+No build step, no linter configured. Runtime deps: stdlib + `websockets`
++ `psutil`.
+
+## Architecture (big picture)
+
+Three process classes share a localhost WebSocket bus:
+
+1. **`bin/server.py`** — single detached asyncio websockets server per
+   port. Started by whichever client wins the `bind()` election. Owns
+   the registry of connected agents, mints `msg_id`s, writes
+   `messages.log`. Idle-shutdown after N minutes.
+
+2. **`bin/client.py`** — long-lived per-session monitor. Each stdout
+   line becomes a Claude Code notification. Manages reconnect with
+   exponential backoff, ping/pong, and a ppid-based dedup flock.
+
+3. **`bin/{send,list}.py`** — short-lived control CLIs. Connect with
+   `role=control`, do not register as agents, never appear in `list`.
+   Discover their owning session via `bin/discover.py` (process-tree
+   walk + per-listener state file).
+
+`bin/spawn.py` is the election + spawn boundary; `bin/shared.py` is
+paths, validation, sanitizer, atomic bearer-token, identity helpers.
+
+## Non-obvious invariants (read before changing the affected code)
+
+### Race-free server election (`bin/spawn.py` + `bin/server.py --fd`)
+
+The election is `bind()`-atomic: whoever wins spawns the server via
+`subprocess.Popen(pass_fds=(fd,), start_new_session=True)`, and the
+child adopts the bound fd with `socket.socket(fileno=fd).listen()`.
+**PEP 446 is the gotcha**: CPython sets `FD_CLOEXEC` on sockets by
+default, so `os.set_inheritable(fd, True)` is required — without it,
+`execvp` silently closes the socket. `SO_REUSEADDR=1` is also set to
+allow fast rebind after a SIGKILL'd server (otherwise macOS holds the
+port for ~30 s).
+
+### Server identity verification (`bin/shared.py::verify_server_identity`)
+
+Before any client or helper sends the bearer token, it verifies the
+server process identity by reading the pidfile's `.meta` companion and
+checking pid + cmdline + host + port. Refuses on mismatch. This is
+defense-in-depth against a coincidental localhost port squatter
+receiving the token.
+
+### userConfig is delivered via env vars, NOT `${user_config.*}` substitution
+
+`monitors/monitors.json` deliberately omits `${user_config.*}` because
+that substitution breaks `--plugin-dir` local-dev mode (CC doesn't
+prompt + substitute in that mode). Instead, CC injects userConfig as
+`CLAUDE_PLUGIN_OPTION_*` env vars, and `bin/client.py`'s argparse
+defaults read those. **Do not add `--port` or
+`--idle-shutdown-minutes` literal CLI args back into `monitors.json`
+or the SKILL.md `Monitor` command** — they silently nullify the
+user's plugin config. Regression test:
+`test_plugin_manifest.py::test_command_does_not_hardcode_userconfig_args`.
+
+### Roles: agent vs control
+
+`role=agent` (client.py, long-lived) appears in `list` and receives
+`msg` events. `role=control` (send.py, list.py, ephemeral) does NOT
+appear in `list`. Control connections must include `for_session` +
+`nonce` matching their owning listener's state file; the server
+cross-checks. This blocks impersonation by sibling processes that share
+a parent.
+
+### ASCII `name` vs Unicode `label`
+
+`name` is the addressable handle: strict ASCII, regex
+`^[a-z0-9][a-z0-9-]{0,39}$`, case-sensitive. `label` is an optional
+Unicode display string, NFC-normalized and category-restricted (no
+`Cc/Cf/Cs/Cn/Z*`) to block BiDi/ZWJ/NBSP injection. All routing happens
+by name; labels are display-only. Don't try to address by label.
+
+### Three-tier size limits
+
+| Limit                        | Value                                      |
+| :--------------------------- | :----------------------------------------- |
+| WebSocket frame              | 10 MB                                      |
+| Direct `text` length         | 9 MB (server-enforced)                     |
+| Broadcast `text` length      | 256 KB (server-enforced)                   |
+| Stdout notification          | 256 KB (truncate + log pointer above this) |
+
+Direct messages > 256 KB display as a truncated first-line and a `cont`
+line pointing to `messages.log` so the receiver can fetch the full
+payload via `grep -F <msg_id>`.
+
+### Reaction policy lives in `SKILL.md`
+
+The behavioral contract for the receiving agent (when to act, when to
+surface, broadcast vs direct, reply prefixes, destructive-op
+guardrails) is prose in `SKILL.md`. `tests/test_reaction_policy.py`
+runs static checks on that prose so prose edits can't accidentally
+drop a guardrail.
+
+## Test conventions
+
+- **State isolation**: the `tmp_data_dir` fixture sets
+  `INTER_SESSION_DATA_DIR` to a per-test temp path so the suite never
+  touches `~/.claude/data/inter-session/`.
+- **Free ports**: the `free_port` fixture binds port `0` to find an
+  ephemeral port.
+- **PPID override**: subprocesses spawned in a single test share the
+  pytest parent pid, which would collide on the ppid flock. Set
+  `INTER_SESSION_PPID_OVERRIDE` to give each subprocess a distinct
+  pseudo-ppid.
+- **Slow tests** (`@pytest.mark.slow`): subprocess-spawning, >1 s.
+
+## Don't
+
+- **Don't blanket `pkill -f 'bin/(client|server).py'`** during local
+  testing — it will kill real user inter-session monitors running in
+  other CC sessions. Target specific pids via the pidfile
+  (`~/.claude/data/inter-session/server.<port>.pid`) or
+  `TaskList()`-derived monitor task IDs.
+- **Don't use `${user_config.*}` substitution in `monitors.json`** —
+  see invariant above.
+- **Don't weaken the SKILL.md description** ("pushy" multi-trigger
+  framing is intentional to combat undertriggering — skill-creator
+  best practice).

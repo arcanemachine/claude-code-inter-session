@@ -1,0 +1,8 @@
+[
+  {
+    "name": "inter-session-client",
+    "command": "python3 ${CLAUDE_PLUGIN_ROOT}/bin/client.py",
+    "description": "inter-session messages",
+    "when": "always"
+  }
+]
