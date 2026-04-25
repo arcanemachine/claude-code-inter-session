@@ -28,19 +28,28 @@ MONITOR_NAME = "inter-session-client"
 
 
 def _resolve_monitors_path() -> Path:
-    root = os.environ.get("CLAUDE_PLUGIN_ROOT")
-    if not root:
-        sys.stderr.write(
-            "auto_start: CLAUDE_PLUGIN_ROOT is not set. This command only "
-            "applies when inter-session is installed as a plugin; "
-            "standalone-skill installs have no monitors.json to edit.\n"
-        )
-        sys.exit(2)
-    p = Path(root) / "monitors" / "monitors.json"
-    if not p.is_file():
-        sys.stderr.write(f"auto_start: {p} not found\n")
-        sys.exit(2)
-    return p
+    # Plugin root resolution, in order of preference:
+    #   1. CLAUDE_PLUGIN_ROOT env var (override; rarely set in subprocesses
+    #      because ${CLAUDE_PLUGIN_ROOT} in CC manifests is a substitution
+    #      token, not an exported env var).
+    #   2. The script's own location: <plugin-root>/bin/auto_start.py
+    #      → plugin-root is two parents up. This is the reliable path.
+    env_root = os.environ.get("CLAUDE_PLUGIN_ROOT")
+    candidates: list[Path] = []
+    if env_root:
+        candidates.append(Path(env_root))
+    candidates.append(Path(__file__).resolve().parent.parent)
+
+    for root in candidates:
+        p = root / "monitors" / "monitors.json"
+        if p.is_file():
+            return p
+
+    sys.stderr.write(
+        "auto_start: could not locate monitors.json. Searched: "
+        f"{[str(c / 'monitors' / 'monitors.json') for c in candidates]}\n"
+    )
+    sys.exit(2)
 
 
 def _load(path: Path) -> list:

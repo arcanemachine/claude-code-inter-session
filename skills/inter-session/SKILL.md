@@ -218,10 +218,11 @@ then `TaskStop(<id>)`.
 
 ## auto-start — toggle plugin auto-start mode
 
-Plugin install only. Edits `${CLAUDE_PLUGIN_ROOT}/monitors/monitors.json`'s
-`when` field for the `inter-session-client` monitor. The change takes
-effect on `/reload-plugins` or the next CC session — surface this to the
-user after running.
+Edits the plugin's `monitors/monitors.json` `when` field. The script
+self-locates relative to its own path (`<bin>/auto_start.py` →
+`<plugin-root>/monitors/monitors.json`), so no env var is needed.
+Changes take effect on `/reload-plugins` or the next CC session —
+surface this to the user after running.
 
 | User input                              | Bash                                              |
 | :-------------------------------------- | :------------------------------------------------ |

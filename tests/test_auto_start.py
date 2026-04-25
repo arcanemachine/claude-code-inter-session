@@ -101,16 +101,23 @@ class TestSet:
 
 
 class TestErrors:
-    def test_no_plugin_root(self, fake_plugin_root: Path):
+    def test_no_env_falls_back_to_script_relative(self):
+        """Without CLAUDE_PLUGIN_ROOT, the script self-locates from
+        __file__ (bin/auto_start.py → repo root → monitors/monitors.json).
+        It should succeed against the real repo."""
         r = _run(["--status"], plugin_root=None)
-        assert r.returncode == 2
-        assert "CLAUDE_PLUGIN_ROOT" in r.stderr
+        assert r.returncode == 0
+        assert "auto-start:" in r.stdout
 
-    def test_missing_monitors_json(self, tmp_path: Path):
-        # plugin_root exists but no monitors/monitors.json inside
-        r = _run(["--status"], tmp_path)
-        assert r.returncode == 2
-        assert "not found" in r.stderr
+    def test_env_root_takes_precedence(self, fake_plugin_root: Path):
+        """When CLAUDE_PLUGIN_ROOT IS set, prefer it over script-relative."""
+        m = fake_plugin_root / "monitors" / "monitors.json"
+        data = json.loads(m.read_text())
+        data[0]["when"] = ALWAYS  # set the fake to ALWAYS
+        m.write_text(json.dumps(data) + "\n")
+        r = _run(["--status"], fake_plugin_root)
+        # Should reflect the fake's value, not the real repo's.
+        assert "ON" in r.stdout
 
     def test_missing_monitor_entry(self, fake_plugin_root: Path):
         m = fake_plugin_root / "monitors" / "monitors.json"
