@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-SKILL = (REPO / "SKILL.md").read_text()
+SKILL = (REPO / "skills" / "inter-session" / "SKILL.md").read_text()
 
 
 class TestFrontmatter:

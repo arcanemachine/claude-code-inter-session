@@ -12,22 +12,10 @@ Single user, single machine. Unix-only (macOS, Linux, WSL2).
 ## Prerequisites
 
 - Python ≥ 3.10
-- Claude Code ≥ 2.1.105 (plugin mode) or ≥ 2.1.98 (skill-only mode)
+- Claude Code ≥ 2.1.105
 - Runtime deps: `websockets`, `psutil` (see [`requirements.txt`](./requirements.txt))
 
 ## Install
-
-### As a skill (simplest, no auto-start)
-
-```bash
-git clone https://github.com/yilunzhang/claude-code-inter-session ~/.claude/skills/inter-session
-```
-
-Then in any Claude Code session, run `/inter-session` to connect. The
-skill auto-runs `/inter-session install-deps` on first connect if
-dependencies are missing.
-
-### As a plugin (auto-starts the monitor at session open)
 
 For local development:
 
@@ -44,6 +32,11 @@ git clone https://github.com/yilunzhang/claude-code-inter-session
 ```
 
 Then run `/inter-session install-deps` once to install runtime deps.
+
+By default the monitor starts **lazily** — it spins up the first time
+you invoke any `/inter-session` command in a session. To switch to
+always-on auto-start, run `/inter-session auto-start on` (and
+`/reload-plugins` to apply).
 
 ### Dependency install — uv preferred, pip fallback
 
@@ -118,6 +111,7 @@ require explicit affirmative content; ambiguous requests prompt a
 | `/inter-session status`                         | Heuristic connection state.                                    |
 | `/inter-session disconnect`                     | Stop the monitor.                                              |
 | `/inter-session install-deps`                   | One-time dependency install with confirmation.                 |
+| `/inter-session auto-start [on\|off\|status]`   | Toggle auto-start. `on` = start at every session; `off` = lazy (default). Apply with `/reload-plugins`. |
 
 ## Plugin configuration
 

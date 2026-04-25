@@ -100,6 +100,7 @@ When the user invokes `/inter-session [args]`, parse `args` to dispatch:
 | `/inter-session rename <new-name>`            | Disconnect and reconnect with the new name.                       |
 | `/inter-session status`                       | Show this session's connection state.                             |
 | `/inter-session disconnect`                   | TaskStop the running monitor.                                     |
+| `/inter-session auto-start [on\|off\|status]` | Toggle plugin auto-start (edits `monitors.json` `when` field).    |
 
 ## connect — start the monitor
 
@@ -214,6 +215,24 @@ Find the monitor-task-id via `TaskList()`.
 
 Call `TaskList()`, find the task whose description is `"inter-session messages"`,
 then `TaskStop(<id>)`.
+
+## auto-start — toggle plugin auto-start mode
+
+Plugin install only. Edits `${CLAUDE_PLUGIN_ROOT}/monitors/monitors.json`'s
+`when` field for the `inter-session-client` monitor. The change takes
+effect on `/reload-plugins` or the next CC session — surface this to the
+user after running.
+
+| User input                              | Bash                                              |
+| :-------------------------------------- | :------------------------------------------------ |
+| `/inter-session auto-start status`      | `python3 <bin>/auto_start.py --status`            |
+| `/inter-session auto-start on`          | `python3 <bin>/auto_start.py --on`                |
+| `/inter-session auto-start off`         | `python3 <bin>/auto_start.py --off`               |
+
+`on` = `when: "always"` (start at every session open).
+`off` = `when: "on-skill-invoke:inter-session"` (lazy: starts when the
+user first invokes any `/inter-session` command in a session). The
+default for fresh installs is `off` (lazy).
 
 ## Truncated messages
 

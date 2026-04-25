@@ -6,12 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 An agent-to-agent messaging bus for Claude Code: multiple CC sessions on
 the same Unix machine connect to a localhost WebSocket server and
-exchange messages that drive actions in the receiving session. Ships in
-two flavors from the same repo:
+exchange messages that drive actions in the receiving session.
 
-- **Skill**: `git clone … ~/.claude/skills/inter-session`, manual `/inter-session`.
-- **Plugin**: `claude --plugin-dir <path>` (or marketplace install); the
-  plugin's monitor auto-starts the client.
+Plugin install only (`claude --plugin-dir <path>` for local dev,
+marketplace install otherwise). Layout follows the conventional
+`skills/<name>/SKILL.md` auto-discovery pattern that the current CC
+plugin schema requires (`"skills": ["./"]` is rejected with "Path
+escapes plugin directory"). The monitor's default `when` is
+`on-skill-invoke:inter-session` (lazy); `bin/auto_start.py` flips it to
+`always` when the user runs `/inter-session auto-start on`.
 
 Single user, single machine. Unix-only (macOS / Linux / WSL2).
 

@@ -6,14 +6,25 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+SKILL_DIR = REPO / "skills" / "inter-session"
 
 
 class TestPluginJson:
     def test_loads(self):
         cfg = json.loads((REPO / ".claude-plugin" / "plugin.json").read_text())
         assert cfg["name"] == "inter-session"
-        assert cfg["skills"] == ["./"]
         assert cfg["monitors"] == "./monitors/monitors.json"
+
+    def test_no_explicit_skills_key(self):
+        """The current plugin schema rejects "skills": ["./"] with
+        'Path escapes plugin directory'. Anthropic's official plugins omit
+        the key entirely and rely on auto-discovery from skills/<name>/SKILL.md.
+        """
+        cfg = json.loads((REPO / ".claude-plugin" / "plugin.json").read_text())
+        assert "skills" not in cfg, (
+            'plugin.json must not declare "skills": the schema rejects '
+            '["./"] and ["."]. Auto-discovery scans skills/<name>/SKILL.md.'
+        )
 
     def test_user_config_shape(self):
         cfg = json.loads((REPO / ".claude-plugin" / "plugin.json").read_text())
@@ -32,8 +43,16 @@ class TestMonitorsJson:
         m = monitors[0]
         assert m["name"] == "inter-session-client"
         assert m["description"] == "inter-session messages"
-        assert m["when"] == "always"
+        assert m["when"] in ("always", "on-skill-invoke:inter-session")
         assert "${CLAUDE_PLUGIN_ROOT}/bin/client.py" in m["command"]
+
+    def test_default_when_is_lazy(self):
+        """The default ships as 'on-skill-invoke:inter-session' — sessions
+        that never use the bus pay nothing. Users who want always-on can
+        flip with `/inter-session auto-start on`.
+        """
+        m = json.loads((REPO / "monitors" / "monitors.json").read_text())[0]
+        assert m["when"] == "on-skill-invoke:inter-session"
 
     def test_command_works_in_plugin_dir_mode(self):
         """`--plugin-dir` mode does NOT run the userConfig prompt, so the
@@ -65,13 +84,18 @@ class TestMonitorsJson:
             )
 
 
-class TestRepoRootHasSkillMd:
-    def test_skill_md_at_root(self):
-        # plugin.json sets "skills": ["./"] so the SKILL.md must live at the repo root.
-        assert (REPO / "SKILL.md").is_file()
+class TestSkillMdLocation:
+    def test_skill_md_in_skills_subdir(self):
+        """Plugins use auto-discovery: skills/<name>/SKILL.md. Anything else
+        breaks /reload-plugins with 'Path escapes plugin directory'."""
+        assert (SKILL_DIR / "SKILL.md").is_file()
+
+    def test_no_stray_skill_md_at_root(self):
+        """If SKILL.md is at the repo root too, the duplication risks drift."""
+        assert not (REPO / "SKILL.md").exists()
 
     def test_skill_md_has_frontmatter_name(self):
-        first = (REPO / "SKILL.md").read_text().splitlines()
+        first = (SKILL_DIR / "SKILL.md").read_text().splitlines()
         assert first[0] == "---"
         assert "name: inter-session" in "\n".join(first[:10])
 
@@ -86,6 +110,9 @@ class TestBinScriptsExist:
     def test_send_and_list(self):
         assert (REPO / "bin" / "send.py").is_file()
         assert (REPO / "bin" / "list.py").is_file()
+
+    def test_auto_start_py(self):
+        assert (REPO / "bin" / "auto_start.py").is_file()
 
 
 class TestRequirements:
