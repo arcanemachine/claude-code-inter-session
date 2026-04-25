@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parent.parent
-SCRIPT = REPO / "bin" / "auto_start.py"
+SCRIPT = REPO / "skills" / "inter-session" / "bin" / "auto_start.py"
 ALWAYS = "always"
 LAZY = "on-skill-invoke:inter-session"
 
@@ -22,7 +22,7 @@ def fake_plugin_root(tmp_path: Path) -> Path:
     (monitors_dir / "monitors.json").write_text(json.dumps([
         {
             "name": "inter-session-client",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/bin/client.py",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/skills/inter-session/bin/client.py",
             "description": "inter-session messages",
             "when": LAZY,
         }

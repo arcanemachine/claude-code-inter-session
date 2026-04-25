@@ -21,10 +21,11 @@ from typing import Optional
 import websockets
 from websockets.server import WebSocketServerProtocol
 
-# Allow running as a script: ensure repo root on sys.path so `from bin.shared` works.
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
+# Allow running as a script: ensure the skill dir is on sys.path so
+# `from bin import shared` finds the package at <skill-dir>/bin/.
+_SKILL_DIR = Path(__file__).resolve().parent.parent
+if str(_SKILL_DIR) not in sys.path:
+    sys.path.insert(0, str(_SKILL_DIR))
 
 from bin import shared
 

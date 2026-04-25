@@ -1,7 +1,7 @@
 [
   {
     "name": "inter-session-client",
-    "command": "python3 ${CLAUDE_PLUGIN_ROOT}/bin/client.py",
+    "command": "python3 ${CLAUDE_PLUGIN_ROOT}/skills/inter-session/bin/client.py",
     "description": "inter-session messages",
     "when": "on-skill-invoke:inter-session"
   }

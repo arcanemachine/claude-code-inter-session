@@ -28,17 +28,20 @@ MONITOR_NAME = "inter-session-client"
 
 
 def _resolve_monitors_path() -> Path:
-    # Plugin root resolution, in order of preference:
+    # monitors.json lives at <plugin-root>/monitors/monitors.json.
+    # This script lives at <plugin-root>/skills/inter-session/bin/auto_start.py,
+    # so the plugin root is FOUR parents up from this file.
+    #
+    # Resolution order:
     #   1. CLAUDE_PLUGIN_ROOT env var (override; rarely set in subprocesses
     #      because ${CLAUDE_PLUGIN_ROOT} in CC manifests is a substitution
     #      token, not an exported env var).
-    #   2. The script's own location: <plugin-root>/bin/auto_start.py
-    #      → plugin-root is two parents up. This is the reliable path.
+    #   2. Script-relative: walk up four parents.
     env_root = os.environ.get("CLAUDE_PLUGIN_ROOT")
     candidates: list[Path] = []
     if env_root:
         candidates.append(Path(env_root))
-    candidates.append(Path(__file__).resolve().parent.parent)
+    candidates.append(Path(__file__).resolve().parents[3])
 
     for root in candidates:
         p = root / "monitors" / "monitors.json"

@@ -16,6 +16,7 @@ import pytest
 from bin import shared
 
 REPO = Path(__file__).resolve().parent.parent
+BIN_DIR = REPO / "skills" / "inter-session" / "bin"
 
 
 @pytest.fixture
@@ -40,7 +41,7 @@ def _spawn_listener(port, name, env_data_dir, ppid_override):
     env["PYTHONPATH"] = str(REPO)
     env["INTER_SESSION_PPID_OVERRIDE"] = str(ppid_override)
     return subprocess.Popen(
-        [sys.executable, str(REPO / "bin" / "client.py"),
+        [sys.executable, str(BIN_DIR / "client.py"),
          "--port", str(port), "--name", name, "--idle-shutdown-minutes", "1"],
         stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
@@ -56,7 +57,7 @@ def _run_helper(script: str, env_data_dir, ppid_override, *args, timeout=10.0):
     env["PYTHONPATH"] = str(REPO)
     env["INTER_SESSION_PPID_OVERRIDE"] = str(ppid_override)
     return subprocess.run(
-        [sys.executable, str(REPO / "bin" / script), *args],
+        [sys.executable, str(BIN_DIR / script), *args],
         env=env, capture_output=True, text=True, timeout=timeout,
     )
 

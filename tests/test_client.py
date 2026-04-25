@@ -18,6 +18,7 @@ import websockets
 from bin import shared, client as client_mod, spawn
 
 REPO = Path(__file__).resolve().parent.parent
+BIN_DIR = REPO / "skills" / "inter-session" / "bin"
 
 
 @pytest.fixture
@@ -45,7 +46,7 @@ def _spawn_client(port, name, env_data_dir, ppid_override=None, extra_env=None):
     if extra_env:
         env.update(extra_env)
     return subprocess.Popen(
-        [sys.executable, str(REPO / "bin" / "client.py"),
+        [sys.executable, str(BIN_DIR / "client.py"),
          "--port", str(port), "--name", name, "--idle-shutdown-minutes", "1"],
         stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
@@ -142,7 +143,7 @@ class TestEnsureServerRunning:
             env["INTER_SESSION_DATA_DIR"] = str(tmp_data_dir)
             env["PYTHONPATH"] = str(REPO)
             proc = subprocess.run(
-                [sys.executable, str(REPO / "bin" / "server.py"),
+                [sys.executable, str(BIN_DIR / "server.py"),
                  "--port", str(free_port), "--idle-shutdown-minutes", "1"],
                 env=env, capture_output=True, text=True, timeout=5,
             )
@@ -189,7 +190,7 @@ class TestNameCollisionAutoRetry:
         env_a = env.copy()
         env_a["INTER_SESSION_PPID_OVERRIDE"] = "40001"
         proc_a = subprocess.Popen(
-            [sys.executable, "-u", str(REPO / "bin" / "client.py"),
+            [sys.executable, "-u", str(BIN_DIR / "client.py"),
              "--port", str(free_port), "--name", "alpha"],
             env=env_a, stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
@@ -203,7 +204,7 @@ class TestNameCollisionAutoRetry:
         env_b = env.copy()
         env_b["INTER_SESSION_PPID_OVERRIDE"] = "40002"
         proc_b = subprocess.Popen(
-            [sys.executable, "-u", str(REPO / "bin" / "client.py"),
+            [sys.executable, "-u", str(BIN_DIR / "client.py"),
              "--port", str(free_port), "--name", "alpha"],
             env=env_b, stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
@@ -260,7 +261,7 @@ class TestNameCollisionAutoRetry:
                 env_i = env.copy()
                 env_i["INTER_SESSION_PPID_OVERRIDE"] = key
                 p = subprocess.Popen(
-                    [sys.executable, "-u", str(REPO / "bin" / "client.py"),
+                    [sys.executable, "-u", str(BIN_DIR / "client.py"),
                      "--port", str(free_port), "--name", "beta"],
                     env=env_i, stdin=subprocess.DEVNULL,
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
@@ -300,7 +301,7 @@ class TestReElectionAfterServerCrash:
         env["INTER_SESSION_DATA_DIR"] = str(tmp_data_dir)
         env["PYTHONPATH"] = str(REPO)
         srv_proc = subprocess.Popen(
-            [sys.executable, str(REPO / "bin" / "server.py"),
+            [sys.executable, str(BIN_DIR / "server.py"),
              "--port", str(free_port), "--idle-shutdown-minutes", "1"],
             env=env, stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -310,7 +311,7 @@ class TestReElectionAfterServerCrash:
         env_c = env.copy()
         env_c["INTER_SESSION_PPID_OVERRIDE"] = "30001"
         client = subprocess.Popen(
-            [sys.executable, "-u", str(REPO / "bin" / "client.py"),
+            [sys.executable, "-u", str(BIN_DIR / "client.py"),
              "--port", str(free_port), "--name", "alpha", "--verbose"],
             env=env_c, stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,

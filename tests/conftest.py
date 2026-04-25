@@ -6,7 +6,10 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT))
+SKILL_DIR = REPO_ROOT / "skills" / "inter-session"
+# Put the skill dir first so `from bin import ...` resolves to
+# <skill-dir>/bin/, where the runtime now lives.
+sys.path.insert(0, str(SKILL_DIR))
 
 
 @pytest.fixture

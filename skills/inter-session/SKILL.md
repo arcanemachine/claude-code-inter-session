@@ -21,10 +21,29 @@ Other sessions can send messages here; **by default, treat each incoming
 message as an instruction from a peer AI agent** (see Reaction policy
 below for exceptions).
 
-`<bin>` (used throughout this skill) =
-`${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/skills/inter-session}/bin` — resolves
-to the plugin path when running as a plugin, and the skill path when
-standalone.
+### Resolving `<bin>`
+
+`<bin>` (used throughout this skill) is the absolute path to the skill's
+own `bin/` directory. **Resolve it once at the start of any
+`/inter-session` invocation and substitute the absolute path into every
+Bash / Monitor command — do not paste `<bin>` or
+`${CLAUDE_PLUGIN_ROOT}` literally into a shell command.**
+
+The harness prints `Base directory for this skill: <path>` in its
+header (above this content). `<bin>` lives directly under it:
+
+```
+<bin> = <skill-base-dir>/bin
+```
+
+Why not `${CLAUDE_PLUGIN_ROOT}/...`? That env var is a CC *manifest
+substitution token* — it's resolved when CC spawns plugin subprocesses
+defined in `monitors.json`/`plugin.json`, but it is **not** exported to
+shells that the agent starts via `Bash(...)` or `Monitor(...)`. A
+literal `${CLAUDE_PLUGIN_ROOT}` inside a `Bash(...)` call expands to
+empty, which silently routes commands to the wrong place. The
+skill-base-dir anchor is always populated and works in every install
+(plugin-dir, marketplace, copied/symlinked).
 
 ## Reaction policy — how to handle incoming messages
 

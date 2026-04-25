@@ -12,9 +12,16 @@ Plugin install only (`claude --plugin-dir <path>` for local dev,
 marketplace install otherwise). Layout follows the conventional
 `skills/<name>/SKILL.md` auto-discovery pattern that the current CC
 plugin schema requires (`"skills": ["./"]` is rejected with "Path
-escapes plugin directory"). The monitor's default `when` is
-`on-skill-invoke:inter-session` (lazy); `bin/auto_start.py` flips it to
-`always` when the user runs `/inter-session auto-start on`.
+escapes plugin directory"). **`bin/` lives inside the skill dir**
+(`skills/inter-session/bin/`) so the skill is self-contained — users
+can copy or symlink `skills/inter-session/` and have everything they
+need. The monitor's default `when` is `on-skill-invoke:inter-session`
+(lazy); `bin/auto_start.py` flips it to `always` when the user runs
+`/inter-session auto-start on`.
+
+When CLAUDE.md and other docs reference `bin/<script>.py` as an
+abbreviated label, the actual path is
+`skills/inter-session/bin/<script>.py`.
 
 Single user, single machine. Unix-only (macOS / Linux / WSL2).
 

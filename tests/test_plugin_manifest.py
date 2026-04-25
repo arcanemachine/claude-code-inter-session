@@ -7,6 +7,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 SKILL_DIR = REPO / "skills" / "inter-session"
+BIN_DIR = SKILL_DIR / "bin"
 
 
 class TestPluginJson:
@@ -44,7 +45,7 @@ class TestMonitorsJson:
         assert m["name"] == "inter-session-client"
         assert m["description"] == "inter-session messages"
         assert m["when"] in ("always", "on-skill-invoke:inter-session")
-        assert "${CLAUDE_PLUGIN_ROOT}/bin/client.py" in m["command"]
+        assert "${CLAUDE_PLUGIN_ROOT}/skills/inter-session/bin/client.py" in m["command"]
 
     def test_default_when_is_lazy(self):
         """The default ships as 'on-skill-invoke:inter-session' — sessions
@@ -101,18 +102,25 @@ class TestSkillMdLocation:
 
 
 class TestBinScriptsExist:
+    """bin/ lives inside the skill directory so the skill is self-contained
+    (users can copy/symlink skills/inter-session/ wherever and it works)."""
+
     def test_client_py(self):
-        assert (REPO / "bin" / "client.py").is_file()
+        assert (BIN_DIR / "client.py").is_file()
 
     def test_server_py(self):
-        assert (REPO / "bin" / "server.py").is_file()
+        assert (BIN_DIR / "server.py").is_file()
 
     def test_send_and_list(self):
-        assert (REPO / "bin" / "send.py").is_file()
-        assert (REPO / "bin" / "list.py").is_file()
+        assert (BIN_DIR / "send.py").is_file()
+        assert (BIN_DIR / "list.py").is_file()
 
     def test_auto_start_py(self):
-        assert (REPO / "bin" / "auto_start.py").is_file()
+        assert (BIN_DIR / "auto_start.py").is_file()
+
+    def test_no_bin_at_repo_root(self):
+        """bin/ moved into the skill dir; old top-level location is gone."""
+        assert not (REPO / "bin").exists()
 
 
 class TestRequirements:
