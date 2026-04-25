@@ -124,12 +124,18 @@ class TestBinScriptsExist:
 
 
 class TestRequirements:
-    def test_runtime_deps(self):
-        req = (REPO / "requirements.txt").read_text()
+    def test_runtime_deps_in_skill_dir(self):
+        """Runtime deps live inside the skill dir so the skill stays
+        self-contained (`<bin>/../requirements.txt` resolves to the
+        right file from inside SKILL.md)."""
+        req = (SKILL_DIR / "requirements.txt").read_text()
         assert "websockets" in req
         assert "psutil" in req
 
+    def test_no_stray_requirements_at_root(self):
+        assert not (REPO / "requirements.txt").exists()
+
     def test_dev_deps_inherit_runtime(self):
         dev = (REPO / "requirements-dev.txt").read_text()
-        assert "-r requirements.txt" in dev
+        assert "-r skills/inter-session/requirements.txt" in dev
         assert "pytest" in dev

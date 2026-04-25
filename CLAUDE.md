@@ -23,20 +23,25 @@ When CLAUDE.md and other docs reference `bin/<script>.py` as an
 abbreviated label, the actual path is
 `skills/inter-session/bin/<script>.py`.
 
+End users invoke the skill as `/inter-session:inter-session …`
+(plugin-skill commands are always namespaced); docs sometimes use
+`/inter-session …` as readable shorthand.
+
 Single user, single machine. Unix-only (macOS / Linux / WSL2).
 
 ## Common commands
 
 ```bash
-pip install -r requirements-dev.txt          # one-time
-pytest -q                                    # full suite (~23 s, 175 tests)
+pip install -r requirements-dev.txt          # one-time (inherits skills/inter-session/requirements.txt)
+pytest -q                                    # full suite (~49 s, 193 tests)
 pytest tests/test_server.py -v               # one file
 pytest -k "election" -v                      # by substring
 pytest -m "not slow"                         # skip subprocess-spawning tests
 ```
 
-No build step, no linter configured. Runtime deps: stdlib + `websockets`
-+ `psutil`.
+No build step, no linter configured. Runtime deps live at
+`skills/inter-session/requirements.txt` (websockets + psutil) so the
+skill stays self-contained.
 
 ## Architecture (big picture)
 

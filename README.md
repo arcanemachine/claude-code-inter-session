@@ -4,8 +4,9 @@ Agent-to-agent messaging for Claude Code sessions on the same machine. Each
 Claude Code session connects to a local WebSocket bus and can send messages
 to other connected sessions; incoming messages are delivered to the
 receiving agent as stdout notifications and **acted on as instructions by
-default** (with safety guardrails — see [SKILL.md](./SKILL.md)). One
-session can drive another.
+default** (with safety guardrails — see
+[SKILL.md](./skills/inter-session/SKILL.md)). One session can drive
+another.
 
 Single user, single machine. Unix-only (macOS, Linux, WSL2).
 
@@ -13,54 +14,34 @@ Single user, single machine. Unix-only (macOS, Linux, WSL2).
 
 - Python ≥ 3.10
 - Claude Code ≥ 2.1.105
-- Runtime deps: `websockets`, `psutil` (see [`requirements.txt`](./requirements.txt))
 
 ## Install
 
-For local development:
+In any Claude Code session:
 
-```bash
-claude --plugin-dir /path/to/claude-code-inter-session
 ```
-
-Or install via the bundled marketplace manifest:
-
-```bash
-git clone https://github.com/yilunzhang/claude-code-inter-session
-/plugin marketplace add ./claude-code-inter-session
+/plugin marketplace add https://github.com/yilunzhang/claude-code-inter-session
 /plugin install inter-session@inter-session
 ```
 
-Then run `/inter-session:inter-session install-deps` once to install
-runtime deps.
+Then start using it:
+
+```
+/inter-session:inter-session list
+```
+
+Claude handles runtime dependency install automatically on first use — no
+extra setup needed.
 
 > **Slash command syntax**: Claude Code namespaces plugin-skill commands
-> as `/<plugin>:<skill>`. Type `/inter-session:inter-session …` (the
-> bare `/inter-session` form only works for standalone-skill installs).
-> The rest of this README uses `/inter-session …` as shorthand to keep
-> the prose readable.
+> as `/<plugin>:<skill>`, so the actual invocation is
+> `/inter-session:inter-session …`. The rest of this README writes
+> `/inter-session …` as readable shorthand.
 
 By default the monitor starts **lazily** — it spins up the first time
-you invoke any `/inter-session` command in a session. To switch to
-always-on auto-start, run `/inter-session auto-start on` (and
-`/reload-plugins` to apply).
-
-### Dependency install — uv preferred, pip fallback
-
-`/inter-session install-deps` runs the right command based on what's
-available. Manual equivalents:
-
-```bash
-# uv (fastest, handles PEP 668 transparently):
-uv pip install --system -r requirements.txt
-
-# system pip with user-level install:
-python3 -m pip install --user -r requirements.txt
-
-# explicit venv (most robust under PEP 668):
-python3 -m venv ~/.claude/data/inter-session/venv
-~/.claude/data/inter-session/venv/bin/pip install -r requirements.txt
-```
+you invoke any `/inter-session` command in a given Claude Code session.
+To switch to always-on auto-start at every session open, run
+`/inter-session auto-start on` (then `/reload-plugins`).
 
 ## Quick example
 
@@ -101,14 +82,11 @@ payments-debug   ~/proj/payments           12s
 ```
 
 The receiving agent applies guardrails before acting (see the Reaction
-policy section of [SKILL.md](./SKILL.md)) — destructive operations
-require explicit affirmative content; ambiguous requests prompt a
-`question:` clarifier first.
+policy section of [SKILL.md](./skills/inter-session/SKILL.md)) —
+destructive operations require explicit affirmative content; ambiguous
+requests prompt a `question:` clarifier first.
 
 ## Slash commands
-
-(Type these as `/inter-session:inter-session …` per the namespacing note
-under Install above; `/inter-session …` is shorthand here.)
 
 | Command                                         | What it does                                                   |
 | :---------------------------------------------- | :------------------------------------------------------------- |
@@ -120,24 +98,17 @@ under Install above; `/inter-session …` is shorthand here.)
 | `/inter-session rename <new-name>`              | Rename — implemented as disconnect + reconnect.                |
 | `/inter-session status`                         | Heuristic connection state.                                    |
 | `/inter-session disconnect`                     | Stop the monitor.                                              |
-| `/inter-session install-deps`                   | One-time dependency install with confirmation.                 |
 | `/inter-session auto-start [on\|off\|status]`   | Toggle auto-start. `on` = start at every session; `off` = lazy (default). Apply with `/reload-plugins`. |
 
 ## Plugin configuration
 
-When installed as a plugin, the WebSocket port and idle-shutdown timeout
-are configurable via `/plugin config`:
+The WebSocket port and idle-shutdown timeout are configurable via
+`/plugin config`:
 
 | Key                       | Type   | Default | What it does                                              |
 | :------------------------ | :----- | :------ | :-------------------------------------------------------- |
 | `port`                    | number | `9473`  | Localhost WebSocket port for the bus.                     |
 | `idle_shutdown_minutes`   | number | `10`    | Server exits after this many minutes with no connected clients. `0` = never. |
-
-Claude Code injects these as `CLAUDE_PLUGIN_OPTION_PORT` and
-`CLAUDE_PLUGIN_OPTION_IDLE_SHUTDOWN_MINUTES` env vars; `client.py`
-picks them up automatically. In skill-only mode (no plugin), set
-`INTER_SESSION_PORT` or `INTER_SESSION_IDLE_MINUTES` if you need to
-override the defaults.
 
 ## Threat model
 
@@ -148,11 +119,12 @@ override the defaults.
   connect. This is acceptable for single-user, single-machine.
 - The token does **not** protect against malicious code running as your
   user. If you don't trust local code, don't enable inter-session.
-- The receiving agent's reaction policy (see [SKILL.md](./SKILL.md))
-  treats peer messages as instructions but applies the same caution as
-  user input — destructive ops need explicit affirmative content,
-  ambiguous requests prompt a `question:` first, broadcasts are
-  informational unless addressed via `@<your-name>`.
+- The receiving agent's reaction policy (see
+  [SKILL.md](./skills/inter-session/SKILL.md)) treats peer messages as
+  instructions but applies the same caution as user input —
+  destructive ops need explicit affirmative content, ambiguous requests
+  prompt a `question:` first, broadcasts are informational unless
+  addressed via `@<your-name>`.
 
 ## Limits
 
