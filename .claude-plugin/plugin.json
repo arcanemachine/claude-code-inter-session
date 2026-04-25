@@ -14,7 +14,7 @@
     "idle_shutdown_minutes": {
       "type": "number",
       "title": "Idle shutdown (min)",
-      "description": "Server exits after this many minutes with zero connected clients. 0 = never.",
+      "description": "Server exits after this many minutes with no connected clients. Timer resets on every client connect/disconnect. 0 = never.",
       "default": 10
     }
   }

@@ -103,8 +103,8 @@ by name; labels are display-only. Don't try to address by label.
 
 | Limit                        | Value                                      |
 | :--------------------------- | :----------------------------------------- |
-| WebSocket frame              | 10 MB                                      |
-| Direct `text` length         | 9 MB (server-enforced)                     |
+| WebSocket frame              | 16 MB                                      |
+| Direct `text` length         | 10 MB (server-enforced)                    |
 | Broadcast `text` length      | 256 KB (server-enforced)                   |
 | Stdout notification          | 256 KB (truncate + log pointer above this) |
 

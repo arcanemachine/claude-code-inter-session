@@ -127,7 +127,7 @@ are configurable via `/plugin config`:
 | Key                       | Type   | Default | What it does                                              |
 | :------------------------ | :----- | :------ | :-------------------------------------------------------- |
 | `port`                    | number | `9473`  | Localhost WebSocket port for the bus.                     |
-| `idle_shutdown_minutes`   | number | `10`    | Server exits after this many idle minutes. `0` = never.   |
+| `idle_shutdown_minutes`   | number | `10`    | Server exits after this many minutes with no connected clients. `0` = never. |
 
 Claude Code injects these as `CLAUDE_PLUGIN_OPTION_PORT` and
 `CLAUDE_PLUGIN_OPTION_IDLE_SHUTDOWN_MINUTES` env vars; `client.py`
@@ -152,12 +152,12 @@ override the defaults.
 
 ## Limits
 
-- WebSocket frame size: 10 MB.
-- Direct `text` length: 9 MB.
+- WebSocket frame size: 16 MB.
+- Direct `text` length: 10 MB.
 - Broadcast `text` length: 256 KB.
 - Stdout notification: 256 KB (above this, truncate + log pointer to
   `~/.claude/data/inter-session/messages.log`).
-- Broadcast rate: 10 / minute / session.
+- Broadcast rate: 60 / minute / session.
 
 ## Development
 
