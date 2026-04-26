@@ -2,20 +2,30 @@
 
 from __future__ import annotations
 
+# Bootstrap: re-exec under the project's isolated venv if it exists.
+# (Server is normally spawned by client.py with sys.executable already
+# pointing at the venv; this guards against direct `python3 server.py`
+# invocations.)
+import os
+import sys
+from pathlib import Path
+_VENV_PY = Path.home() / ".claude" / "data" / "inter-session" / "venv" / "bin" / "python"
+if (not os.environ.get("INTER_SESSION_NO_REEXEC")
+        and _VENV_PY.is_file()
+        and Path(sys.executable).resolve() != _VENV_PY.resolve()):
+    os.execv(str(_VENV_PY), [str(_VENV_PY), *sys.argv])
+
 import argparse
 import asyncio
 import json
 import logging
-import os
 import signal
 import socket
-import sys
 import time
 import uuid
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Optional
 
 import websockets

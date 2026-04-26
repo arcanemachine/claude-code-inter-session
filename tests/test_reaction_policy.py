@@ -50,13 +50,24 @@ class TestReactionPolicy:
 
 
 class TestInstallDepsUx:
-    def test_uv_first_then_pip(self):
-        assert "uv" in SKILL
-        assert "python3 -m pip" in SKILL
+    def test_uses_isolated_venv_by_default(self):
+        """install-deps must default to a project-local venv at
+        ~/.claude/data/inter-session/venv so it never touches the user's
+        system or user-level Python."""
+        assert "~/.claude/data/inter-session/venv" in SKILL
+        assert "python3 -m venv" in SKILL or "uv venv" in SKILL
 
-    def test_break_system_packages_only_with_explicit_choice(self):
-        assert "--break-system-packages" in SKILL
-        assert "Override" in SKILL or "warn" in SKILL.lower()
+    def test_offers_uv_as_optional(self):
+        """uv is the optional fast path; user can also stay on stdlib venv."""
+        assert "uv" in SKILL
+
+    def test_no_user_or_system_pip_pollution(self):
+        """The old --user / --system / --break-system-packages paths
+        modified user-visible Python and were dropped in favor of the
+        isolated venv."""
+        assert "pip install --user" not in SKILL
+        assert "pip install --system" not in SKILL
+        assert "--break-system-packages" not in SKILL
 
 
 class TestDedupGuard:

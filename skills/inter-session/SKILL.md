@@ -158,8 +158,9 @@ notification if imports fail, so just start the monitor.
    Passing them as CLI args silently nullifies the user's plugin config,
    so leave them off.
 
-   If the user picked the venv install option (B), swap `python3` for
-   `~/.claude/data/inter-session/venv/bin/python` in the command.
+   Use plain `python3` in the command — `client.py` re-execs under the
+   project venv (`~/.claude/data/inter-session/venv/bin/python`)
+   automatically once `install-deps` has created it.
 
    Each stdout line is a peer message — apply the Reaction policy above.
 
@@ -176,28 +177,49 @@ and ask them for a name: `/inter-session connect <some-other-name>`.
 **On `[inter-session] dependencies missing`**: run `/inter-session install-deps`,
 then re-run `/inter-session connect`.
 
-## install-deps — the right way to install
+## install-deps — install runtime deps into an isolated venv
 
-Detect `uv`:
+Inter-session keeps its Python deps in a dedicated venv at
+`~/.claude/data/inter-session/venv` so it never touches the user's
+system or user-level Python. Once the venv exists, every `bin/*.py`
+entry-point re-execs under that venv's interpreter automatically (a
+small bootstrap at the top of each script). The user doesn't need to
+configure anything else.
 
-```bash
-command -v uv
-```
+### Default flow (auto-runs on first connect if deps are missing)
 
-If `uv` is found, propose `uv pip install --system -r <bin>/../requirements.txt`.
-Otherwise propose `python3 -m pip install --user -r <bin>/../requirements.txt`.
+1. **Detect `uv`** with `command -v uv`. uv is faster but optional.
+2. **Print the exact commands you're about to run, then ask the user
+   to confirm** before executing.
+3. **Create the venv** if it doesn't already exist:
+   - With uv: `uv venv ~/.claude/data/inter-session/venv`
+   - Without uv: `python3 -m venv ~/.claude/data/inter-session/venv`
+4. **Install runtime deps into the venv**:
+   - With uv: `uv pip install -p ~/.claude/data/inter-session/venv -r <bin>/../requirements.txt`
+   - Without uv: `~/.claude/data/inter-session/venv/bin/pip install -r <bin>/../requirements.txt`
+5. **Tell the user**: "Installed in isolated venv at
+   `~/.claude/data/inter-session/venv`. Future `/inter-session` commands
+   will pick it up automatically."
 
-**Always print the exact command and ask the user to confirm** before running
-it. If the pip install fails with PEP 668 / "externally-managed-environment",
-present three options to the user (do NOT auto-pick):
+### Why isolated?
 
-- **A**) Install uv: `curl -LsSf https://astral.sh/uv/install.sh | sh`. After
-  it lands, re-run `/inter-session install-deps`.
-- **B**) Create a dedicated venv at `~/.claude/data/inter-session/venv` and
-  install there. Then the monitor command becomes
-  `~/.claude/data/inter-session/venv/bin/python <bin>/client.py …`.
-- **C**) Override: `python3 -m pip install --break-system-packages --user
-  -r requirements.txt`. Warn that this disables the safety net.
+- Doesn't pollute the user's system or user-level Python.
+- Doesn't conflict with the user's other projects' websockets/psutil
+  versions.
+- Survives Python upgrades cleanly — just `rm -rf
+  ~/.claude/data/inter-session/venv` to reset.
+- Sidesteps PEP 668's `externally-managed-environment` guard
+  (Homebrew / system Python / recent Debian/Ubuntu).
+
+### If `python3 -m venv` itself is unavailable
+
+Rare on modern macOS / Linux / WSL2, but if the venv module is missing
+(some minimal Python builds), present these to the user:
+
+- **Install uv** (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+  and re-run `/inter-session install-deps`. uv ships its own venv impl.
+- **Install the venv package** via the system package manager (e.g.
+  `apt install python3-venv` on Debian/Ubuntu).
 
 ## list / send / broadcast — bash CLIs
 

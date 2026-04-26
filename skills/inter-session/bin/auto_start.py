@@ -1,14 +1,13 @@
 """Toggle the inter-session plugin monitor's auto-start behavior.
 
-Edits the `when` field of the inter-session-client monitor in
-`${CLAUDE_PLUGIN_ROOT}/monitors/monitors.json` atomically.
+Edits the `when` field of the inter-session-client monitor in the
+plugin's `monitors/monitors.json` atomically. The script self-locates
+relative to its own path (no env var needed); CLAUDE_PLUGIN_ROOT is
+honored as an override if set.
 
 Modes:
   always                          start at every CC session open
   on-skill-invoke:inter-session   start when /inter-session is first invoked
-
-Only meaningful when running as a plugin (CLAUDE_PLUGIN_ROOT must be set).
-Standalone-skill installs have no monitors.json to edit.
 
 Changes take effect on `/reload-plugins` or the next CC session.
 """

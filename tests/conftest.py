@@ -11,6 +11,12 @@ SKILL_DIR = REPO_ROOT / "skills" / "inter-session"
 # <skill-dir>/bin/, where the runtime now lives.
 sys.path.insert(0, str(SKILL_DIR))
 
+# Tests run with the dev environment's Python (which has websockets/psutil
+# installed via requirements-dev.txt). Disable the entry-point bootstrap
+# that would re-exec under ~/.claude/data/inter-session/venv if one
+# exists — that venv is for the user's runtime, not for tests.
+os.environ["INTER_SESSION_NO_REEXEC"] = "1"
+
 
 @pytest.fixture
 def tmp_data_dir(tmp_path, monkeypatch):
