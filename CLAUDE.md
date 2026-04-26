@@ -56,17 +56,28 @@ Single user, single machine. Unix-only (macOS / Linux / WSL2).
 
 ## Common commands
 
+Local dev runs entirely in a project-local venv at `.venv`. The
+Makefile bootstraps it on first use (uv preferred, stdlib `venv` as
+fallback). System Python is never touched.
+
 ```bash
-pip install -r requirements-dev.txt          # one-time (inherits skills/inter-session/requirements.txt)
-pytest -q                                    # full suite (~49 s, 193 tests)
-pytest tests/test_server.py -v               # one file
-pytest -k "election" -v                      # by substring
-pytest -m "not slow"                         # skip subprocess-spawning tests
+make test                                    # full suite (~49 s, 197 tests)
+make test-fast                               # skip subprocess-spawning tests
+make clean                                   # remove .venv
+```
+
+To run pytest with non-make flags, use the venv's pytest directly:
+
+```bash
+.venv/bin/pytest tests/test_server.py -v     # one file
+.venv/bin/pytest -k "election" -v            # by substring
 ```
 
 No build step, no linter configured. Runtime deps live at
-`skills/inter-session/requirements.txt` (websockets + psutil) so the
-skill stays self-contained.
+`skills/inter-session/requirements.txt` (websockets + psutil); dev
+deps inherit those plus pytest via `requirements-dev.txt`. Both reqs
+files install into `.venv` via `make test` — there's nothing to install
+by hand.
 
 ## Architecture (big picture)
 
