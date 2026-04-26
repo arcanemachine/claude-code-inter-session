@@ -166,10 +166,9 @@ payload via `grep -F <msg_id>`.
 ### Reaction policy lives in `SKILL.md`
 
 The behavioral contract for the receiving agent (when to act, when to
-surface, broadcast vs direct, reply prefixes, destructive-op
-guardrails) is prose in `SKILL.md`. `tests/test_reaction_policy.py`
-runs static checks on that prose so prose edits can't accidentally
-drop a guardrail.
+surface, reply prefixes, destructive-op guardrails) is prose in
+`SKILL.md`. `tests/test_reaction_policy.py` runs static checks on that
+prose so prose edits can't accidentally drop a guardrail.
 
 ## Test conventions
 

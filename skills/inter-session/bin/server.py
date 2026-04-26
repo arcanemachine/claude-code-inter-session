@@ -596,7 +596,6 @@ class Server:
             "from_label": state.label,
             "text": text,
             "ts": datetime.now(tz=timezone.utc).isoformat(),
-            "broadcast": True,
         }
         self._log_message(msg, kind="broadcast")
         for target in targets:

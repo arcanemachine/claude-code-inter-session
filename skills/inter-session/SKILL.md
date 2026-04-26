@@ -61,11 +61,9 @@ When you see a stdout notification of the form
 point of this system — one session driving another. Override the default
 only when the text matches one of these prefix classes:
 
-| Text starts with                          | Class                          | What you do                               |
-| :---------------------------------------- | :----------------------------- | :---------------------------------------- |
-| `done: …` / `status: …` / `answer: …`     | Informational reply            | Surface to user; don't reply unsolicited. |
-| `all: …` (and `@<your-name>` not in text) | Broadcast not addressed to you | Surface; don't act.                       |
-| `@<other-name>: …` (not your name)        | Addressed to a different peer  | Surface; don't act.                       |
+| Text starts with                      | Class               | What you do                               |
+| :------------------------------------ | :------------------ | :---------------------------------------- |
+| `done: …` / `status: …` / `answer: …` | Informational reply | Surface to user; don't reply unsolicited. |
 
 If the request itself is **ambiguous, large-scope, or destructive** —
 regardless of prefix — reply with `question: …` first and act only after
@@ -249,10 +247,6 @@ broadcast:   Bash("python3 <bin>/send.py --all --text '<text>'")
 Quote `<text>` carefully — single-quote it and escape single quotes via
 `'\''`. If the user's text contains backticks or `$()`, single-quoting
 preserves them.
-
-**When broadcasting, prefix the text with `all:`** (or `@a @b @c` for a
-specific subset) so receivers can apply the right policy. Receivers can't
-tell broadcasts from direct sends without that hint.
 
 ## rename — disconnect + reconnect
 

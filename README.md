@@ -3,10 +3,8 @@
 Agent-to-agent messaging for Claude Code sessions on the same machine. Each
 Claude Code session connects to a local WebSocket bus and can send messages
 to other connected sessions; incoming messages are delivered to the
-receiving agent as stdout notifications and **acted on as instructions by
-default** (with safety guardrails — see
-[SKILL.md](./skills/inter-session/SKILL.md)). One session can drive
-another.
+receiving agent as prompts and **acted on as instructions by default**.
+One session can drive another.
 
 Localhost only and Unix-only (macOS, Linux, WSL2) for now.
 
@@ -133,7 +131,7 @@ prompt a `question:` clarifier first.
 </details>
 
 <details>
-<summary><b>Example 2 — implementer + reviewer</b> · TDD-style iterative loop, ~30 rounds</summary>
+<summary><b>Example 2 — implementer + reviewer</b> · TDD-style iterative loop</summary>
 
 Two sessions iterating on a complex feature. The reviewer's accumulated
 catalog of edge cases makes each successive round more pointed — context
@@ -181,7 +179,7 @@ You can come back tomorrow and resume — both sessions persist.
 </details>
 
 <details>
-<summary><b>Example 3 — red-team + blue-team</b> · adversarial security loop, hundreds of rounds</summary>
+<summary><b>Example 3 — red-team + blue-team</b> · adversarial security loop</summary>
 
 Two sessions in a long back-and-forth: attack catalog on one side, patch
 lineage on the other. Both grow round by round.
@@ -261,9 +259,8 @@ The WebSocket port and idle-shutdown timeout are configurable via
 - The receiving agent's reaction policy (see
   [SKILL.md](./skills/inter-session/SKILL.md)) treats peer messages as
   instructions but applies the same caution as user input —
-  destructive ops need explicit affirmative content, ambiguous requests
-  prompt a `question:` first, broadcasts are informational unless
-  addressed via `@<your-name>`.
+  destructive ops need explicit affirmative content, and ambiguous
+  requests prompt a `question:` clarifier first.
 
 ## Limits
 

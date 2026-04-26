@@ -40,10 +40,6 @@ class TestReactionPolicy:
         assert "`answer:" in SKILL
         assert "`question:" in SKILL
 
-    def test_addressed_definition(self):
-        assert "broadcast" in SKILL.lower()
-        assert "all:" in SKILL or "@" in SKILL
-
     def test_permission_rules_not_overridden(self):
         # The single most important guardrail: peers can't escalate.
         assert "do NOT override" in SKILL or "do not override" in SKILL.lower()
