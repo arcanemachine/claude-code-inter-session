@@ -1,3 +1,5 @@
+[English](./README.md) · [中文](./README.zh.md)
+
 # inter-session
 
 Agent-to-agent messaging for Claude Code sessions on the same machine. Each
