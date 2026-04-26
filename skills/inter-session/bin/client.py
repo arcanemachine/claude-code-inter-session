@@ -138,6 +138,21 @@ def _acquire_ppid_lock(ppid: int) -> Optional[int]:
         raise
 
 
+def _read_existing_session_state(ppid: int) -> Optional[dict]:
+    """Read the existing listener's session-state file. Used when our
+    flock acquire fails so the caller can embed the existing
+    connection's identity (name, listener_pid, session_id) in the
+    'already running' error message — saves a follow-up `list.py --self`
+    round-trip in the skill's connect flow."""
+    try:
+        path = shared.client_session_path(ppid)
+        if not path.exists():
+            return None
+        return json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
 class Client:
     def __init__(
         self,
@@ -175,7 +190,16 @@ class Client:
         # Per-CC-session dedup lock (skill mode). Plugin mode uses monitor name dedup.
         self._lock_fd = _acquire_ppid_lock(self.ppid)
         if self._lock_fd is None:
-            _print_line("[inter-session] another monitor for this session is already running — exiting")
+            info = _read_existing_session_state(self.ppid)
+            if info:
+                _print_line(
+                    "[inter-session] another monitor for this session is already running "
+                    f"— name={info.get('name', '')!r}, "
+                    f"listener_pid={info.get('listener_pid', '')}, "
+                    f"session_id={info.get('session_id', '')}; exiting"
+                )
+            else:
+                _print_line("[inter-session] another monitor for this session is already running — exiting")
             return 0
 
         # Best-effort: delete state file on graceful exit so helpers don't

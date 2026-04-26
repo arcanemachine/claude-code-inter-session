@@ -123,22 +123,25 @@ When the user invokes `/inter-session [args]`, parse `args` to dispatch:
 
 ## connect — start the monitor
 
-Move quickly — connect should feel like opening a tab, not a 30-second
-negotiation. No dep precheck; `client.py` exits 0 with a friendly
-`[inter-session] dependencies missing — run /inter-session install-deps`
-notification if imports fail, so just start the monitor.
+Skip pre-checks. Pick a name, call `Monitor()`, done. If a monitor is
+already running for this session, `client.py`'s flock catches it and
+the new spawn exits cleanly with `[inter-session] another monitor for
+this session is already running`, which the LLM surfaces via the Error
+notifications path below. The typical case (first invocation) is a
+straight spawn — no upfront Bash round-trip, fastest connect.
 
-1. **Dedup guard (one TaskList call)**: if `TaskList()` shows any task whose
-   description is exactly `"inter-session messages"`, you're already
-   connected — surface the existing task and stop.
-2. **Pick a name**:
-   - If the user supplied one, validate `^[a-z0-9][a-z0-9-]{0,39}$`.
-     Invalid → tell the user and stop.
+Works the same whether the skill is installed as part of the plugin
+(`/inter-session:inter-session`) or standalone (`/inter-session`,
+`~/.claude/skills/inter-session/SKILL.md`).
+
+1. **Pick a name**:
+   - If the user supplied one as `connect <name>`, validate
+     `^[a-z0-9][a-z0-9-]{0,39}$`. Invalid → tell the user and stop.
    - If not, propose 1–3 hyphenated lowercase words from cwd basename +
      obvious recent-conversation theme (e.g., `auth-refactor`,
      `payments-debug`). One sentence in your reply: "Connecting as
      `<name>`…".
-3. **Start the monitor**:
+2. **Start the monitor**:
    ```
    Monitor(
      command="python3 <bin>/client.py --name <name>",
@@ -151,18 +154,32 @@ notification if imports fail, so just start the monitor.
    them with this precedence (highest first):
    1. CLI arg (wins if passed)
    2. `CLAUDE_PLUGIN_OPTION_PORT` / `CLAUDE_PLUGIN_OPTION_IDLE_SHUTDOWN_MINUTES`
-      — CC injects these from the plugin's `userConfig`
+      — CC injects these from the plugin's `userConfig` (plugin install
+      only; standalone-skill installs have no userConfig)
    3. `INTER_SESSION_PORT` / `INTER_SESSION_IDLE_MINUTES` (manual override)
    4. Defaults: `9473`, `10` minutes
 
    Passing them as CLI args silently nullifies the user's plugin config,
-   so leave them off.
-
-   Use plain `python3` in the command — `client.py` re-execs under the
-   project venv (`~/.claude/data/inter-session/venv/bin/python`)
-   automatically once `install-deps` has created it.
+   so leave them off. Use plain `python3` — `client.py` re-execs under
+   the project venv automatically once `install-deps` has created it.
 
    Each stdout line is a peer message — apply the Reaction policy above.
+
+3. **If the spawn returns
+   `[inter-session] another monitor for this session is already running — name='<existing>', listener_pid=<pid>, session_id=<id>; exiting`**:
+   the session was already connected. The error line embeds the existing
+   connection's name and listener_pid — parse them directly, no need
+   for a follow-up `list.py --self`.
+   - **User did NOT supply a name** (typed just `/inter-session:inter-session`
+     or `connect`), or **supplied the same name** (`connect <existing>`):
+     surface "Connected as `<existing>`." and stop.
+   - **User supplied a different name** (`connect <new>` where
+     `<new>` ≠ `<existing>`): treat it as a rename. Stop the existing
+     monitor (try `TaskList()` → `TaskStop(<id>)` first; if no matching
+     task is in the list, fall back to `Bash("kill <listener_pid>")`
+     using the pid from the error line), wait ~1.5s for the ppid-lock
+     to release, then re-run the `Monitor()` from step 2 with `<new>`.
+     Reply with "Renamed `<existing>` → `<new>`."
 
 **On `[inter-session] name '…' taken; using '…-2'`**: informational only —
 the client auto-retried with the suggested suffix. The connection succeeded

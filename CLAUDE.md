@@ -8,24 +8,49 @@ An agent-to-agent messaging bus for Claude Code: multiple CC sessions on
 the same Unix machine connect to a localhost WebSocket server and
 exchange messages that drive actions in the receiving session.
 
-Plugin install only (`claude --plugin-dir <path>` for local dev,
-marketplace install otherwise). Layout follows the conventional
-`skills/<name>/SKILL.md` auto-discovery pattern that the current CC
-plugin schema requires (`"skills": ["./"]` is rejected with "Path
-escapes plugin directory"). **`bin/` lives inside the skill dir**
-(`skills/inter-session/bin/`) so the skill is self-contained — users
-can copy or symlink `skills/inter-session/` and have everything they
-need. The monitor's default `when` is `on-skill-invoke:inter-session`
-(lazy); `bin/auto_start.py` flips it to `always` when the user runs
-`/inter-session auto-start on`.
+Two install modes, **both supported and tested**:
+
+- **Plugin** (recommended): `/plugin marketplace add …` → `/plugin
+  install inter-session@inter-session`, or `claude --plugin-dir <repo>`
+  for local dev. Adds `userConfig` (port, idle-shutdown) and
+  `monitors.json`. User invokes as `/inter-session:inter-session …`.
+- **Standalone skill**: clone or symlink `skills/inter-session/` to
+  `~/.claude/skills/inter-session/` (e.g. `ln -s
+  <repo>/skills/inter-session ~/.claude/skills/inter-session`). The
+  skill is self-contained — `bin/`, `requirements.txt`, and `SKILL.md`
+  all live inside `skills/inter-session/`, so a copy or symlink of just
+  that subdirectory is a fully working skill. User invokes as
+  `/inter-session …` (no plugin namespace). No `userConfig`; override
+  defaults via `INTER_SESSION_PORT` / `INTER_SESSION_IDLE_MINUTES` env
+  vars if needed.
+
+The skill content (`skills/inter-session/SKILL.md`) is install-mode
+agnostic: the connect step has **no upfront dedup check**. It picks a
+name and calls `Monitor()` directly. If a monitor is already running
+for this CC session, `bin/client.py`'s ppid-flock catches the duplicate
+and the new spawn exits with `[inter-session] another monitor for this
+session is already running`, which the LLM surfaces via the Error
+notifications path. Skipping the pre-check optimizes the common case
+(not connected yet → straight spawn, ~50-100ms faster) and lets the
+flock be the single source of truth for race-safety. Don't add a
+`list.py --self` or `TaskList()` pre-check back into the connect step
+— that was tried and reverted because the optimization paid more in
+the common case than it saved in the edge case.
+
+Layout follows the conventional `skills/<name>/SKILL.md` auto-discovery
+pattern that the current CC plugin schema requires (`"skills": ["./"]`
+is rejected with "Path escapes plugin directory"). **`bin/` lives
+inside the skill dir** (`skills/inter-session/bin/`). The plugin's
+monitor `when` defaults to `on-skill-invoke:inter-session` (lazy);
+`bin/auto_start.py` flips it to `always` when the user runs
+`/inter-session auto-start on`. Empirically `on-skill-invoke` may not
+reliably auto-spawn a working monitor in current CC versions, so the
+LLM's `Monitor()` call in the skill is what actually establishes the
+connection most of the time.
 
 When CLAUDE.md and other docs reference `bin/<script>.py` as an
 abbreviated label, the actual path is
 `skills/inter-session/bin/<script>.py`.
-
-End users invoke the skill as `/inter-session:inter-session …`
-(plugin-skill commands are always namespaced); docs sometimes use
-`/inter-session …` as readable shorthand.
 
 Single user, single machine. Unix-only (macOS / Linux / WSL2).
 

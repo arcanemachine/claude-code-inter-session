@@ -429,6 +429,36 @@ class TestPpidLock:
         os.close(fd3)
 
 
+class TestExistingSessionStateLookup:
+    """The flock-fail error message embeds the existing connection's
+    identity so the skill can act on it without a follow-up Bash call."""
+
+    def test_returns_none_when_no_state_file(self, tmp_data_dir):
+        shared.secure_dir(shared.clients_dir())
+        assert client_mod._read_existing_session_state(99998) is None
+
+    def test_returns_state_dict_when_present(self, tmp_data_dir):
+        shared.secure_dir(shared.clients_dir())
+        path = shared.client_session_path(99997)
+        path.write_text(json.dumps({
+            "session_id": "abc-123",
+            "name": "auth-refactor",
+            "listener_pid": 4242,
+            "nonce": "n",
+        }))
+        info = client_mod._read_existing_session_state(99997)
+        assert info is not None
+        assert info["name"] == "auth-refactor"
+        assert info["listener_pid"] == 4242
+        assert info["session_id"] == "abc-123"
+
+    def test_returns_none_on_corrupt_json(self, tmp_data_dir):
+        shared.secure_dir(shared.clients_dir())
+        path = shared.client_session_path(99996)
+        path.write_text("{not valid json")
+        assert client_mod._read_existing_session_state(99996) is None
+
+
 class TestEnvVarConfig:
     """Verify client.py picks up CLAUDE_PLUGIN_OPTION_* and INTER_SESSION_* env vars
     so plugin mode (proper /plugin install) and --plugin-dir mode both work."""
