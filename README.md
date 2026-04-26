@@ -41,11 +41,13 @@ each teammate owns a separate piece.
 
 **Use inter-session** when you have multiple Claude Code sessions
 running for unrelated long-lived work and want one to drive another —
-e.g. the session debugging `payments` asks the `auth-refactor` session
-to fix a bug, or a coordinator session delegates pieces of a feature
-to specialist sessions in different repos. Each session keeps its own
-project context, conversation history, and tool permissions; the bus
-just routes messages between them.
+e.g. delegating a bug fix from one project's session to another's;
+running iterative loops where each side's context grows in value
+across many rounds; or letting two sessions with hours of accumulated
+conversation history share findings or coordinate without restarting
+either side. Each session keeps its own project context, conversation
+history, and tool permissions; the bus just routes messages between
+them.
 
 **Transition point**: if you find yourself copy-pasting between Claude
 Code sessions you already have open, or if your agent-team task spans
