@@ -8,6 +8,10 @@ to other connected sessions; incoming messages are delivered to the
 receiving agent as prompts and **acted on as instructions by default**.
 One session can drive another.
 
+Implemented using Claude Code's `Monitor` tool: ms-level delivery latency,
+no active polling, and no token or performance cost when there are no messages.
+Does NOT require claude.ai login.
+
 Localhost only and Unix-only (macOS, Linux, WSL2) for now.
 
 ## How does this compare to subagents and agent teams?

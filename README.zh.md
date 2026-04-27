@@ -4,6 +4,8 @@
 
 同一台机器上 Claude Code 会话之间的 agent-to-agent 消息传递。每个 Claude Code 会话连接到本地 WebSocket 总线，可以向其他已连接的会话发送消息；接收方会话把收到的消息当作 prompt，**默认按指令执行**。一个会话可以驱动另一个会话。
 
+基于 Claude Code 的 `Monitor` 工具实现：毫秒级送达延迟，无主动轮询，没有消息时零 token 成本、零性能开销。不需要登陆 claude.ai 账号。
+
 仅本地(localhost)，目前仅支持 Unix(macOS、Linux、WSL2)。
 
 ## 与 subagent 和 agent team 有什么区别？
