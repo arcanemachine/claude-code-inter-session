@@ -10,9 +10,11 @@ One session can drive another.
 
 Implemented using Claude Code's `Monitor` tool: ms-level delivery latency,
 no active polling, and no token or performance cost when there are no messages.
-Does NOT require claude.ai login.
+Does NOT require claude.ai login. No configuration needed.
 
 Localhost only and Unix-only (macOS, Linux, WSL2) for now.
+
+![demo](./demo.svg)
 
 ## How does this compare to subagents and agent teams?
 
