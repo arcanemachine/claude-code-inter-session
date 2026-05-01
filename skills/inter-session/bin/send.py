@@ -6,10 +6,11 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-_VENV_PY = Path.home() / ".claude" / "data" / "inter-session" / "venv" / "bin" / "python"
+_VENV = Path.home() / ".claude" / "data" / "inter-session" / "venv"
+_VENV_PY = _VENV / "bin" / "python"
 if (not os.environ.get("INTER_SESSION_NO_REEXEC")
         and _VENV_PY.is_file()
-        and Path(sys.executable).resolve() != _VENV_PY.resolve()):
+        and Path(sys.prefix).resolve() != _VENV.resolve()):
     os.execv(str(_VENV_PY), [str(_VENV_PY), *sys.argv])
 
 import argparse
