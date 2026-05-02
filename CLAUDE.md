@@ -202,3 +202,9 @@ prose so prose edits can't accidentally drop a guardrail.
   same commit. If the English content shifts but the Chinese gets
   stale, readers landing from `README.zh.md` get a misleading
   description of how the project works.
+- **Don't bump the version in only one of the two plugin manifests.**
+  `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
+  both carry a `version` field and are consulted by different code
+  paths (plugin.json drives installed-plugin update detection;
+  marketplace.json drives the marketplace listing). They must stay
+  in sync — every version bump touches both files in the same commit.
