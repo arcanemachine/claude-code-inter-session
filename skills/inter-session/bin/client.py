@@ -52,13 +52,11 @@ def _format_msg(msg: dict) -> str:
     sanitized = shared.sanitize_for_stdout(msg.get("text", ""))
     truncated, was_truncated, full_len = shared.truncate_for_stdout(sanitized)
     from_name = msg.get("from_name") or msg.get("from", "?")[:8]
-    from_label = msg.get("from_label", "")
     msg_id = msg.get("msg_id", "")
-    label_part = f' "{from_label}"' if from_label else ""
     if was_truncated:
-        prefix = f'[inter-session msg={msg_id} from="{from_name}"{label_part} truncated={full_len}]'
+        prefix = f'[inter-session msg={msg_id} from="{from_name}" truncated={full_len}]'
     else:
-        prefix = f'[inter-session msg={msg_id} from="{from_name}"{label_part}]'
+        prefix = f'[inter-session msg={msg_id} from="{from_name}"]'
     return f"{prefix} {truncated}"
 
 

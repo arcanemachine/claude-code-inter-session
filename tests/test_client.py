@@ -75,12 +75,6 @@ class TestFormatMsg:
         assert 'msg=ab12' in out
         assert out.endswith("hello")
 
-    def test_with_label(self):
-        msg = {"msg_id": "x", "from_name": "alpha", "from_label": "重构", "text": "hi"}
-        out = client_mod._format_msg(msg)
-        assert 'from="alpha"' in out
-        assert '"重构"' in out
-
     def test_truncates(self):
         big = "y" * (shared.STDOUT_CAP + 1000)
         msg = {"msg_id": "x", "from_name": "alpha", "from_label": "", "text": big}
