@@ -207,6 +207,7 @@ class Client:
         # see a stale entry pointing at our dead session_id.
         atexit.register(_delete_session_state, self.ppid)
 
+        parent_watcher = asyncio.create_task(self._watch_parent())
         try:
             backoff = shared.RECONNECT_BACKOFF_MIN_S
             while not self._stop.is_set():
@@ -240,6 +241,7 @@ class Client:
                 backoff = min(backoff * 2, shared.RECONNECT_BACKOFF_MAX_S)
             return 0
         finally:
+            parent_watcher.cancel()
             if self._lock_fd is not None:
                 try:
                     os.close(self._lock_fd)
@@ -352,6 +354,15 @@ class Client:
                 await asyncio.sleep(shared.PING_INTERVAL_S)
                 await ws.send(json.dumps({"op": "ping"}))
             except (websockets.ConnectionClosed, asyncio.CancelledError):
+                return
+
+    async def _watch_parent(self) -> None:
+        # TaskStop may not deliver SIGTERM; detect orphaning via ppid change.
+        original_ppid = os.getppid()
+        while not self._stop.is_set():
+            await asyncio.sleep(10)
+            if os.getppid() != original_ppid:
+                self.stop()
                 return
 
 

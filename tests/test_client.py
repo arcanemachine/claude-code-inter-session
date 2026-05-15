@@ -414,6 +414,60 @@ class TestClientIntegration:
                     pass
 
 
+class TestWatchParent:
+    """_watch_parent should call stop() when the parent PID changes."""
+
+    def test_stops_client_on_ppid_change(self, tmp_data_dir):
+        original_ppid = os.getpid()
+        call_count = 0
+
+        def fake_getppid():
+            nonlocal call_count
+            call_count += 1
+            if call_count <= 1:
+                return original_ppid
+            return 1  # reparented to init
+
+        c = client_mod.Client(ppid=88888)
+        c._stop = asyncio.Event()
+
+        async def _run():
+            import unittest.mock as mock
+            with mock.patch("os.getppid", side_effect=fake_getppid):
+                with mock.patch("asyncio.sleep", return_value=None):
+                    await c._watch_parent()
+
+        asyncio.new_event_loop().run_until_complete(_run())
+        assert c._stop.is_set()
+
+    def test_no_stop_when_ppid_unchanged(self, tmp_data_dir):
+        current_ppid = os.getppid()
+        iterations = 0
+
+        async def _run():
+            nonlocal iterations
+            c = client_mod.Client(ppid=88887)
+            c._stop = asyncio.Event()
+
+            real_sleep = asyncio.sleep
+
+            async def counting_sleep(s):
+                nonlocal iterations
+                iterations += 1
+                if iterations >= 3:
+                    c._stop.set()
+
+            import unittest.mock as mock
+            with mock.patch("os.getppid", return_value=current_ppid):
+                with mock.patch("asyncio.sleep", side_effect=counting_sleep):
+                    await c._watch_parent()
+
+            assert not c._stop.is_set() or iterations >= 3
+
+        asyncio.new_event_loop().run_until_complete(_run())
+        assert iterations >= 3
+
+
 class TestPpidLock:
     def test_lock_acquired_then_released(self, tmp_data_dir):
         shared.secure_dir(shared.clients_dir())

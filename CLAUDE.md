@@ -90,7 +90,9 @@ Three process classes share a localhost WebSocket bus:
 
 2. **`bin/client.py`** — long-lived per-session monitor. Each stdout
    line becomes a Claude Code notification. Manages reconnect with
-   exponential backoff, ping/pong, and a ppid-based dedup flock.
+   exponential backoff, ping/pong, a ppid-based dedup flock, and a
+   parent-PID watchdog that self-terminates the process when orphaned
+   (e.g. `TaskStop` doesn't deliver SIGTERM).
 
 3. **`bin/{send,list}.py`** — short-lived control CLIs. Connect with
    `role=control`, do not register as agents, never appear in `list`.
