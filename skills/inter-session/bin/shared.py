@@ -433,6 +433,41 @@ def secure_file(path: Path) -> bool:
         return False
 
 
+STALE_FILE_AGE_S = 3600
+
+
+def sweep_stale_client_files() -> int:
+    """Remove .session and .lock files whose owning PID is dead and that are
+    older than STALE_FILE_AGE_S. Returns the number of files removed."""
+    import time
+    cdir = clients_dir()
+    if not cdir.is_dir():
+        return 0
+    now = time.time()
+    removed = 0
+    for path in cdir.iterdir():
+        if path.suffix not in (".session", ".lock"):
+            continue
+        try:
+            age = now - path.stat().st_mtime
+        except OSError:
+            continue
+        if age < STALE_FILE_AGE_S:
+            continue
+        try:
+            ppid = int(path.stem)
+        except ValueError:
+            continue
+        if safe_pid_alive(ppid):
+            continue
+        try:
+            path.unlink()
+            removed += 1
+        except OSError:
+            pass
+    return removed
+
+
 def find_cc_ancestor_pid() -> int:
     """Walk up the process tree, return the pid of the first Claude Code
     ancestor. Returns -1 if none found.

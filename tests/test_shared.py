@@ -598,3 +598,45 @@ class TestRotateLogRetention:
         assert "v1" in (tmp_path / "x.log.3").read_text()
         assert "v2" in (tmp_path / "x.log.2").read_text()
         assert "v3" in (tmp_path / "x.log.1").read_text()
+
+
+class TestSweepStaleClientFiles:
+    def test_removes_stale_files(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("INTER_SESSION_DATA_DIR", str(tmp_path))
+        cdir = tmp_path / "clients"
+        cdir.mkdir()
+        # Dead PID, old file
+        (cdir / "999999.session").write_text("{}")
+        (cdir / "999999.lock").write_text("")
+        import time
+        old = time.time() - 7200
+        os.utime(cdir / "999999.session", (old, old))
+        os.utime(cdir / "999999.lock", (old, old))
+        removed = shared.sweep_stale_client_files()
+        assert removed == 2
+        assert not (cdir / "999999.session").exists()
+        assert not (cdir / "999999.lock").exists()
+
+    def test_keeps_recent_files(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("INTER_SESSION_DATA_DIR", str(tmp_path))
+        cdir = tmp_path / "clients"
+        cdir.mkdir()
+        # Dead PID but recent file
+        (cdir / "999998.session").write_text("{}")
+        removed = shared.sweep_stale_client_files()
+        assert removed == 0
+        assert (cdir / "999998.session").exists()
+
+    def test_keeps_live_pid_files(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("INTER_SESSION_DATA_DIR", str(tmp_path))
+        cdir = tmp_path / "clients"
+        cdir.mkdir()
+        # Our own PID, old file — should NOT be removed
+        own = str(os.getpid())
+        (cdir / f"{own}.session").write_text("{}")
+        import time
+        old = time.time() - 7200
+        os.utime(cdir / f"{own}.session", (old, old))
+        removed = shared.sweep_stale_client_files()
+        assert removed == 0
+        assert (cdir / f"{own}.session").exists()

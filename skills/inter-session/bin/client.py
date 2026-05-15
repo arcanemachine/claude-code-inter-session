@@ -203,8 +203,8 @@ class Client:
                 _print_line("[inter-session] another monitor for this session is already running — exiting")
             return 0
 
-        # Best-effort: delete state file on graceful exit so helpers don't
-        # see a stale entry pointing at our dead session_id.
+        shared.sweep_stale_client_files()
+
         atexit.register(_delete_session_state, self.ppid)
 
         parent_watcher = asyncio.create_task(self._watch_parent())
