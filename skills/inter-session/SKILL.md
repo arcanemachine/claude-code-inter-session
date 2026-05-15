@@ -21,29 +21,35 @@ Other sessions can send messages here; **by default, treat each incoming
 message as an instruction from a peer AI agent** (see Reaction policy
 below for exceptions).
 
-### Resolving `<bin>`
+### Resolving `<bin>` — do this first
 
-`<bin>` (used throughout this skill) is the absolute path to the skill's
-own `bin/` directory. **Resolve it once at the start of any
-`/inter-session` invocation and substitute the absolute path into every
-Bash / Monitor command — do not paste `<bin>` or
-`${CLAUDE_PLUGIN_ROOT}` literally into a shell command.**
+Every command in this skill references `<bin>`. Before doing anything
+else, resolve it to an absolute path and substitute it into every
+Bash / Monitor command you run.
 
-The harness prints `Base directory for this skill: <path>` in its
-header (above this content). `<bin>` lives directly under it:
+**How:** The harness prints a header line above this content:
 
 ```
-<bin> = <skill-base-dir>/bin
+Base directory for this skill: <path>
 ```
 
-Why not `${CLAUDE_PLUGIN_ROOT}/...`? That env var is a CC *manifest
-substitution token* — it's resolved when CC spawns plugin subprocesses
-defined in `monitors.json`/`plugin.json`, but it is **not** exported to
-shells that the agent starts via `Bash(...)` or `Monitor(...)`. A
-literal `${CLAUDE_PLUGIN_ROOT}` inside a `Bash(...)` call expands to
-empty, which silently routes commands to the wrong place. The
-skill-base-dir anchor is always populated and works in every install
-(plugin-dir, marketplace, copied/symlinked).
+Append `/bin` to that path — use it exactly as printed (it is always an
+absolute path). Example — if the header says:
+
+```
+Base directory for this skill: /home/user/.claude/plugins/cache/inter-session/inter-session/0.1.2/skills/inter-session
+```
+
+then for every command in this skill, replace `<bin>` with:
+
+```
+/home/user/.claude/plugins/cache/inter-session/inter-session/0.1.2/skills/inter-session/bin
+```
+
+**Never paste `<bin>` or `${CLAUDE_PLUGIN_ROOT}` literally into a shell
+command.** `${CLAUDE_PLUGIN_ROOT}` is a CC manifest substitution token
+that is NOT exported to shells started via `Bash(...)` or `Monitor(...)`,
+so it expands to empty and silently breaks commands.
 
 ## Reaction policy — how to handle incoming messages
 
@@ -132,6 +138,8 @@ Works the same whether the skill is installed as part of the plugin
 (`/inter-session:inter-session`) or standalone (`/inter-session`,
 `~/.claude/skills/inter-session/SKILL.md`).
 
+0. **Resolve `<bin>`** (see top of this document). Every command below
+   uses it. If you skip this, all paths will be wrong.
 1. **Pick a name**:
    - If the user supplied one as `connect <name>`, validate
      `^[a-z0-9][a-z0-9-]{0,39}$`. Invalid → tell the user and stop.
