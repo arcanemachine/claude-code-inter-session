@@ -265,8 +265,19 @@ Find the monitor-task-id via `TaskList()`.
 
 ## disconnect
 
-Call `TaskList()`, find the task whose description is `"inter-session messages"`,
-then `TaskStop(<id>)`.
+1. Fetch the listener PID:
+   ```
+   Bash("python3 <bin>/list.py --self")
+   ```
+   Parse `listener_pid=…` from the output.
+2. Stop the harness task: `TaskList()` → find the task whose description
+   is `"inter-session messages"` → `TaskStop(<id>)`.
+3. Kill the OS process if still alive:
+   ```
+   Bash("kill <listener_pid>")
+   ```
+   This sends SIGTERM, triggering graceful cleanup (`.session` file
+   removal). Ignore errors — the process may have already exited.
 
 ## auto-start — toggle plugin auto-start mode
 
